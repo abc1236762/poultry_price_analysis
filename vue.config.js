@@ -9,6 +9,12 @@ module.exports = {
       return args;
     });
   },
+  devServer: {
+    overlay: {
+      warnings: true,
+      errors: true
+    }
+  },
   pluginOptions: {
     electronBuilder: {
       nodeIntegration: true,
