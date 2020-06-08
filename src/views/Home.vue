@@ -45,13 +45,8 @@
 import data, { getData, dataItems } from '@/plugins/data';
 import { getValueString } from '@/utils';
 
-// import HelloWorld from '@/components/HelloWorld.vue';
-
 export default {
   name: 'Home',
-  components: {
-    // HelloWorld,
-  },
   data: () => ({
     isLoading: false,
     items: [],
@@ -69,7 +64,7 @@ export default {
         const diff = last.value - data[dataItem.title][100].value;
         item.key = dataItem.key;
         item.icon = dataItem.icon;
-        item.title = `${dataItem.title}`;
+        item.title = dataItem.title;
         item.subtitle = `最後更新日期：${last.date}`;
         item.value = getValueString(last.value);
         item.link = dataItem.link;
@@ -87,10 +82,9 @@ export default {
       // TODO
     },
   },
-  created: function() {
-    if (Object.keys(data).length === 0) this.getData();
+  created: async function() {
+    if (Object.keys(data).length === 0) await this.getData();
     this.setItems();
   },
 };
-// mdi-trending-up mdi-trending-down mdi-trending-neutral
 </script>
