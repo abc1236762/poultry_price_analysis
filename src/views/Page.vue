@@ -115,7 +115,7 @@ export default {
       return null;
     },
     data() {
-      return data[this.item.title];
+      return data.get(this.item.title);
     },
   },
   // TODO

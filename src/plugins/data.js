@@ -2,33 +2,48 @@ import axios from 'axios';
 
 import { getDateString } from '@/utils';
 
-const dataSources = {
-  PoultryTransBoiledChickenData: {
-    '白肉雞(2.0Kg以上)': '白肉雞（2.0kg以上）',
-    '白肉雞(1.75-1.95Kg)': '白肉雞（1.75~1.95kg）',
-    '白肉雞(門市價高屏)': '白肉雞（門市價，高屏）',
-    '雞蛋(產地)': '雞蛋（產地）',
-  },
-  PoultryTransLocalChickenData: {
-    黑羽土雞公舍飼: '黑羽土雞（南區，公，舍飼）',
-    黑羽土雞母舍飼: '黑羽土雞（南區，母，舍飼）',
-  },
-  PoultryTransGooseDuckData: {
-    '肉鵝(白羅曼)': '肉鵝（白羅曼）',
-    '正番鴨(公)': '正番鴨（公）',
-    '土番鴨(75天)': '土番鴨（75天）',
-    '鴨蛋(新蛋)(台南)': '鴨蛋（新蛋，台南）',
-  },
-  PoultryTransLocalRedChickenData: {
-    紅羽土雞北區: '紅羽土雞（北區）',
-    紅羽土雞中區: '紅羽土雞（中區）',
-    紅羽土雞南區: '紅羽土雞（南區）',
-  },
-  PoultryTransLocalBlackChickenData: {
-    '黑羽土雞舍飼(南區)公': '黑羽土雞（南區，公，舍飼）',
-    '黑羽土雞舍飼(南區)母': '黑羽土雞（南區，母，舍飼）',
-  },
-};
+const dataSources = new Map([
+  [
+    'PoultryTransBoiledChickenData',
+    new Map([
+      ['白肉雞(2.0Kg以上)', '白肉雞（2.0kg以上）'],
+      ['白肉雞(1.75-1.95Kg)', '白肉雞（1.75~1.95kg）'],
+      ['白肉雞(門市價高屏)', '白肉雞（門市價，高屏）'],
+      ['雞蛋(產地)', '雞蛋（產地）'],
+    ]),
+  ],
+  [
+    'PoultryTransLocalChickenData',
+    new Map([
+      ['黑羽土雞公舍飼', '黑羽土雞（南區，公，舍飼）'],
+      ['黑羽土雞母舍飼', '黑羽土雞（南區，母，舍飼）'],
+    ]),
+  ],
+  [
+    'PoultryTransGooseDuckData',
+    new Map([
+      ['肉鵝(白羅曼)', '肉鵝（白羅曼）'],
+      ['正番鴨(公)', '正番鴨（公）'],
+      ['土番鴨(75天)', '土番鴨（75天）'],
+      ['鴨蛋(新蛋)(台南)', '鴨蛋（新蛋，台南）'],
+    ]),
+  ],
+  [
+    'PoultryTransLocalRedChickenData',
+    new Map([
+      ['紅羽土雞北區', '紅羽土雞（北區）'],
+      ['紅羽土雞中區', '紅羽土雞（中區）'],
+      ['紅羽土雞南區', '紅羽土雞（南區）'],
+    ]),
+  ],
+  [
+    'PoultryTransLocalBlackChickenData',
+    new Map([
+      ['黑羽土雞舍飼(南區)公', '黑羽土雞（南區，公，舍飼）'],
+      ['黑羽土雞舍飼(南區)母', '黑羽土雞（南區，母，舍飼）'],
+    ]),
+  ],
+]);
 
 function getDataUrl(src) {
   const url = 'https://cors-anywhere.herokuapp.com/';
@@ -36,12 +51,11 @@ function getDataUrl(src) {
 }
 
 function processRawData(rawData, fields) {
-  const result = {};
+  const result = new Map();
   for (const node of rawData) {
     const date = node['日期'];
-    for (const [field, name] of Object.entries(fields)) {
-      if (!Object.prototype.hasOwnProperty.call(result, name))
-        result[name] = [];
+    for (const [field, name] of fields) {
+      if (!result.has(name)) result.set(name, new Array());
       let rawValue = node[field];
       if (rawValue != '休市' && rawValue != '-') {
         if (rawValue.includes('..')) rawValue = rawValue.replace('..', '.');
@@ -50,32 +64,35 @@ function processRawData(rawData, fields) {
           rawValue = (Number(rawValues[0]) + Number(rawValues[1])) / 2;
         }
         const value = Number(rawValue);
-        if (value > 0) result[name].push({ date: date, value: value });
+        if (value > 0) result.get(name).push({ date: date, value: value });
       }
     }
   }
   return result;
 }
 
-let data = {};
+let data = new Map();
 
 export function getData() {
   const date = getDateString();
   if (date === localStorage.getItem('date')) {
     return new Promise((resolve) => {
-      Object.assign(data, JSON.parse(localStorage.getItem('data')));
+      JSON.parse(localStorage.getItem('data')).forEach(([k, v]) =>
+        data.set(k, v)
+      );
       resolve();
     });
   }
   return Promise.all(
-    Object.entries(dataSources).map(async ([src, fields]) => {
+    Array.from(dataSources).map(async ([src, fields]) => {
       const response = await axios.get(getDataUrl(src));
       return processRawData(response.data, fields);
     })
   ).then((results) => {
-    results.forEach((result) => Object.assign(data, result));
+    console.log(results);
+    results.forEach((result) => result.forEach((v, k) => data.set(k, v)));
     localStorage.setItem('date', date);
-    localStorage.setItem('data', JSON.stringify(data));
+    localStorage.setItem('data', JSON.stringify(Array.from(data)));
   });
 }
 

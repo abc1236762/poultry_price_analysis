@@ -60,8 +60,8 @@ export default {
     setItems() {
       for (const dataItem of dataItems) {
         const item = {};
-        const last = data[dataItem.title][0];
-        const diff = last.value - data[dataItem.title][1].value;
+        const last = data.get(dataItem.title)[0];
+        const diff = last.value - data.get(dataItem.title)[1].value;
         item.key = dataItem.key;
         item.icon = dataItem.icon;
         item.title = dataItem.title;
