@@ -64,7 +64,7 @@ export default {
         const diff = last.value - data[dataItem.title][1].value;
         item.key = dataItem.key;
         item.icon = dataItem.icon;
-        item.title = `${dataItem.title}`;
+        item.title = dataItem.title;
         item.subtitle = `${dataUnit}，更新：${last.date}`;
         item.value = getValueString(last.value);
         item.link = dataItem.link;
@@ -81,8 +81,8 @@ export default {
       }
     },
   },
-  created: function() {
-    if (Object.keys(data).length === 0) this.getData();
+  created: async function() {
+    if (Object.keys(data).length === 0) await this.getData();
     this.setItems();
   },
 };
