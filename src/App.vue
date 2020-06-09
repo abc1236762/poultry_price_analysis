@@ -3,7 +3,7 @@
     <v-navigation-drawer v-model="drawer" clipped mobile-break-point="640" app>
       <v-list dense shaped>
         <template v-for="item in items">
-          <v-list-item :key="item.key" :to="item.link" link>
+          <v-list-item :key="item.key" :to="item.key" link>
             <v-list-item-icon v-text="item.icon" />
             <v-list-item-content>
               <v-list-item-title v-text="item.title" />
@@ -22,10 +22,10 @@
       <v-container
         fluid
         class="pa-0 overflow-y-auto"
-        style="max-height: calc(100vh - 48px);"
+        style="height: calc(100vh - 48px);"
       >
         <transition name="fade" mode="out-in">
-          <router-view />
+          <router-view :key="$route.params.key" />
         </transition>
       </v-container>
     </v-content>
@@ -50,7 +50,7 @@ export default {
   name: 'App',
   data: () => ({
     drawer: null,
-    items: [{ key: '00', icon: '🏠', title: '首頁', link: '/' }, ...dataItems],
+    items: [{ key: '/', icon: '🏠', title: '首頁' }, ...dataItems],
   }),
 };
 </script>

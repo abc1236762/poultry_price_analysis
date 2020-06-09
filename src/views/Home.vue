@@ -1,13 +1,9 @@
 <template>
   <div class="home">
     <v-list subheader>
-      <v-list-item v-for="item in items" :key="item.key" :to="item.link" link>
+      <v-list-item v-for="item in items" :key="item.key" :to="item.key" link>
         <v-list-item-avatar>
-          <v-icon
-            color="black"
-            style="font-style: normal;"
-            v-text="item.icon"
-          ></v-icon>
+          <v-icon class="icon" v-text="item.icon" />
         </v-list-item-avatar>
         <v-list-item-content>
           <v-list-item-title v-text="item.title" />
@@ -28,9 +24,13 @@
 </template>
 
 <style lang="scss" scoped>
+.icon {
+  color: black;
+  font-style: normal;
+}
 .value {
   backdrop-filter: blur(1px);
-  background: rgba(64, 64, 64, 0.5);
+  background: rgba(158, 158, 158, 0.4);
   border-radius: 16px;
   height: 32px;
   line-height: 32px;
@@ -42,16 +42,11 @@
 </style>
 
 <script>
-import data, { getData, dataItems } from '@/plugins/data';
+import data, { getData, dataItems, dataUnit } from '@/plugins/data';
 import { getValueString } from '@/utils';
-
-// import HelloWorld from '@/components/HelloWorld.vue';
 
 export default {
   name: 'Home',
-  components: {
-    // HelloWorld,
-  },
   data: () => ({
     isLoading: false,
     items: [],
@@ -66,11 +61,11 @@ export default {
       for (const dataItem of dataItems) {
         const item = {};
         const last = data[dataItem.title][0];
-        const diff = last.value - data[dataItem.title][100].value;
+        const diff = last.value - data[dataItem.title][1].value;
         item.key = dataItem.key;
         item.icon = dataItem.icon;
         item.title = `${dataItem.title}`;
-        item.subtitle = `最後更新日期：${last.date}`;
+        item.subtitle = `${dataUnit}，更新：${last.date}`;
         item.value = getValueString(last.value);
         item.link = dataItem.link;
         item.color = 'grey';
@@ -84,7 +79,6 @@ export default {
         }
         this.items.push(item);
       }
-      // TODO
     },
   },
   created: function() {
@@ -92,5 +86,4 @@ export default {
     this.setItems();
   },
 };
-// mdi-trending-up mdi-trending-down mdi-trending-neutral
 </script>
