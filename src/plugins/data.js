@@ -85,6 +85,7 @@ export function getData() {
   }
   return Promise.all(
     Array.from(dataSources).map(async ([src, fields]) => {
+      axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
       const response = await axios.get(getDataUrl(src));
       return processRawData(response.data, fields);
     })
