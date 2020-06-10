@@ -35,63 +35,59 @@
         <v-list-item-subtitle>23 km/h</v-list-item-subtitle>
       </v-list-item>
     </v-card>
+
     <v-card class="ma-4 mx-sm-auto" raised max-width="600">
+      <v-card-title>歷史資料</v-card-title>
       <v-list-item>
-        <v-menu
-          ref="menu1"
-          v-model="menu1"
-          :close-on-content-click="false"
-          transition="scale-transition"
-          offset-y
-          max-width="290px"
-          min-width="290px"
+        <v-dialog
+          ref="datePickerDialog"
+          v-model="isDatePickerEnabled"
+          :return-value.sync="dateRange"
+          persistent
         >
           <template v-slot:activator="{ on, attrs }">
             <v-text-field
-              v-model="dateFormatted"
-              label="Date"
-              persistent-hint
-              prepend-icon="event"
-              v-bind="attrs"
-              @blur="date = parseDate(dateFormatted)"
-              v-on="on"
-            ></v-text-field>
-          </template>
-          <v-date-picker
-            v-model="date"
-            no-title
-            @input="menu1 = false"
-          ></v-date-picker>
-        </v-menu>
-      </v-list-item>
-      <v-list-item>
-        <v-menu
-          v-model="menu2"
-          :close-on-content-click="false"
-          transition="scale-transition"
-          offset-y
-          max-width="290px"
-          min-width="290px"
-        >
-          <template v-slot:activator="{ on, attrs }">
-            <v-text-field
-              v-model="computedDateFormatted"
-              label="Date (read only text field)"
-              hint="MM/DD/YYYY format"
-              persistent-hint
-              prepend-icon="event"
+              v-model="dateRangeText"
+              label="選擇日期範圍"
+              prepend-icon="mdi-calendar-range"
               readonly
               v-bind="attrs"
               v-on="on"
             ></v-text-field>
           </template>
           <v-date-picker
-            v-model="date"
-            no-title
-            @input="menu2 = false"
-          ></v-date-picker>
-        </v-menu>
+            v-model="dateRange"
+            scrollable
+            range
+            show-current="false"
+            :min="dateRangeMin"
+            :max="dateRangeMax"
+            :allowed-dates="allowedDates"
+            :title-date-format="titleDateFormat"
+            :selected-items-text="dateRangeText"
+            :day-format="dayFormat"
+          >
+            <v-spacer />
+            <v-btn text color="primary" @click="isDatePickerEnabled = false">
+              取消
+            </v-btn>
+            <v-btn
+              text
+              color="primary"
+              @click="$refs.datePickerDialog.save(dateRange)"
+            >
+              確定
+            </v-btn>
+          </v-date-picker>
+        </v-dialog>
       </v-list-item>
+      <v-data-table
+        :headers="dataTableHeaders"
+        :items="dataTableItems"
+        :loading="isDataTableLoading"
+        dense
+        mobile-breakpoint=""
+      />
     </v-card>
   </div>
 </template>
@@ -104,9 +100,25 @@
 </style>
 
 <script>
-import data, { dataItems } from '@/plugins/data';
+import { getValueString } from '@/utils';
+import data, { dataItems, dataUnit } from '@/plugins/data';
 
 export default {
+  data: () => ({
+    isDatePickerEnabled: false,
+    isDataTableLoading: true,
+    dateRange: [],
+    dataTableHeaders: [
+      {
+        text: '日期',
+        value: 'date',
+        align: 'center',
+        sortable: false,
+      },
+      { text: `價格（${dataUnit}）`, value: 'value', align: 'end' },
+    ],
+    dataTableItems: [],
+  }),
   computed: {
     item() {
       for (const dataItem of dataItems) {
@@ -117,7 +129,60 @@ export default {
     data() {
       return data.get(this.item.title);
     },
+    dates() {
+      return this.data.map((d) => d.date).sort();
+    },
+    dateRangeMin() {
+      return this.dates[0].split('/').join('-');
+    },
+    dateRangeMax() {
+      return this.dates[this.dates.length - 1].split('/').join('-');
+    },
+    dateRangeText() {
+      return this.titleDateFormat(this.dateRange);
+    },
   },
-  // TODO
+  methods: {
+    allowedDates(date) {
+      return this.dates.includes(date.split('-').join('/'));
+    },
+    dayFormat(date) {
+      return date.split('-')[2].toString();
+    },
+    titleDateFormat(date) {
+      return date
+        .map((dt) => dt.replace(/(\d{4})-(\d{2})-(\d{2})/, '$1年$2月$3日'))
+        .sort()
+        .join('～');
+    },
+    setDataTableItems() {
+      let begin = this.dates.indexOf(this.dateRange[0].split('-').join('/'));
+      let end = this.dates.indexOf(
+        this.dateRange[this.dateRange.length - 1].split('-').join('/')
+      );
+      if (begin > end) [begin, end] = [end, begin];
+      const dates = this.dates.slice(begin, end + 1);
+      this.dataTableItems = this.data
+        .filter((d) => dates.includes(d.date.split('-').join('/')))
+        .map((d) => ({
+          date: d.date.replace(/(\d{4})\/(\d{2})\/(\d{2})/, '$1年$2月$3日'),
+          value: getValueString(d.value),
+        }));
+    },
+  },
+  created() {
+    this.dateRange = [this.dateRangeMin, this.dateRangeMax];
+    this.setDataTableItems();
+    this.isDataTableLoading = false;
+  },
+  watch: {
+    isDatePickerEnabled(value) {
+      if (!value) {
+        this.isDataTableLoading = true;
+        this.setDataTableItems();
+        this.isDataTableLoading = false;
+      }
+    },
+  },
 };
 </script>

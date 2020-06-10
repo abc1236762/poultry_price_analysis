@@ -1,5 +1,4 @@
-export function getDateString() {
-  const date = new Date();
+export function getDateString(date = new Date()) {
   const [y, m, d] = [date.getFullYear(), date.getMonth() + 1, date.getDate()];
   const f = (num, digits) => {
     const s = num.toString();
