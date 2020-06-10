@@ -44,6 +44,7 @@
           v-model="isDatePickerEnabled"
           :return-value.sync="dateRange"
           persistent
+          width="290px"
         >
           <template v-slot:activator="{ on, attrs }">
             <v-text-field
@@ -172,16 +173,12 @@ export default {
   },
   created() {
     this.dateRange = [this.dateRangeMin, this.dateRangeMax];
-    this.setDataTableItems();
-    this.isDataTableLoading = false;
   },
   watch: {
-    isDatePickerEnabled(value) {
-      if (!value) {
-        this.isDataTableLoading = true;
-        this.setDataTableItems();
-        this.isDataTableLoading = false;
-      }
+    dateRange() {
+      this.isDataTableLoading = true;
+      this.setDataTableItems();
+      this.isDataTableLoading = false;
     },
   },
 };
