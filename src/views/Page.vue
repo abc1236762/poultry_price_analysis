@@ -16,12 +16,13 @@
       </v-list-item>
       <v-list-item>
         <v-row align="center">
-          <v-col class="display-3 text-right" cols="8" v-text="price" />
+          <v-col />
+          <v-col class="display-3" cols="auto" v-text="price" />
           <v-col>
-            <v-row no-gutters>
+            <v-row>
               <v-icon large :color="trend.color" v-text="trend.icon" />
             </v-row>
-            <v-row no-gutters v-text="dataUnit" />
+            <v-row v-text="dataUnit" />
           </v-col>
         </v-row>
       </v-list-item>
