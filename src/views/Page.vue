@@ -14,28 +14,18 @@
           </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
-      <v-card-text>
+      <v-list-item>
         <v-row align="center">
-          <v-col class="display-3" cols="6">
-            23&deg;C
-          </v-col>
-          <v-col cols="6">
-            <v-img
-              src="https://cdn.vuetifyjs.com/images/cards/sun.png"
-              alt="Sunny image"
-              width="92"
-            ></v-img>
+          <v-col class="display-3 text-right" cols="8" v-text="price" />
+          <v-col>
+            <v-row no-gutters>
+              <v-icon large :color="trend.color" v-text="trend.icon" />
+            </v-row>
+            <v-row no-gutters v-text="dataUnit" />
           </v-col>
         </v-row>
-      </v-card-text>
-      <v-list-item>
-        <v-list-item-icon>
-          <v-icon>mdi-send</v-icon>
-        </v-list-item-icon>
-        <v-list-item-subtitle>23 km/h</v-list-item-subtitle>
       </v-list-item>
     </v-card>
-
     <v-card class="ma-4 mx-sm-auto" raised max-width="600">
       <v-card-title>歷史資料</v-card-title>
       <v-list-item>
@@ -82,6 +72,12 @@
           </v-date-picker>
         </v-dialog>
       </v-list-item>
+      <line-chart
+        class="pa-4"
+        v-if="isLineChartLoaded"
+        :chart-data="lineChartData"
+        :options="{ legend: { display: false } }"
+      />
       <v-data-table
         :headers="dataTableHeaders"
         :items="dataTableItems"
@@ -104,10 +100,29 @@
 import { getValueString } from '@/utils';
 import data, { dataItems, dataUnit } from '@/plugins/data';
 
+import Vue from 'vue';
+import { Line, mixins } from 'vue-chartjs';
+
+const LineChart = Vue.component('line-chart', {
+  extends: Line,
+  mixins: [mixins.reactiveProp],
+  props: {
+    options: {
+      type: Object,
+      default: null,
+    },
+  },
+  mounted() {
+    this.renderChart(this.chartData, this.options);
+  },
+});
+
 export default {
+  components: { LineChart },
   data: () => ({
     isDatePickerEnabled: false,
     isDataTableLoading: true,
+    dataUnit: dataUnit,
     dateRange: [],
     dataTableHeaders: [
       {
@@ -119,6 +134,8 @@ export default {
       { text: `價格（${dataUnit}）`, value: 'value', align: 'end' },
     ],
     dataTableItems: [],
+    isLineChartLoaded: false,
+    lineChartData: {},
   }),
   computed: {
     item() {
@@ -130,20 +147,39 @@ export default {
     data() {
       return data.get(this.item.title);
     },
+    price() {
+      return getValueString(this.data[0].value);
+    },
+    trend() {
+      const trend = {};
+      const diff = this.data[0].value - this.data[1].value;
+      trend.icon = 'mdi-trending-neutral';
+      if (diff > 0) {
+        trend.color = 'red';
+        trend.icon = 'mdi-trending-up';
+      } else if (diff < 0) {
+        trend.color = 'green';
+        trend.icon = 'mdi-trending-down';
+      }
+      return trend;
+    },
     dates() {
       return this.data.map((d) => d.date).sort();
     },
     dateRangeMin() {
-      return this.dates[0].split('/').join('-');
+      return this.dateOfIndex(this.dates.length - 1);
     },
     dateRangeMax() {
-      return this.dates[this.dates.length - 1].split('/').join('-');
+      return this.dateOfIndex(0);
     },
     dateRangeText() {
       return this.titleDateFormat(this.dateRange);
     },
   },
   methods: {
+    dateOfIndex(index) {
+      return this.dates[this.dates.length - 1 - index].split('/').join('-');
+    },
     allowedDates(date) {
       return this.dates.includes(date.split('-').join('/'));
     },
@@ -169,16 +205,37 @@ export default {
           date: d.date.replace(/(\d{4})\/(\d{2})\/(\d{2})/, '$1年$2月$3日'),
           value: getValueString(d.value),
         }));
+      this.lineChartData = {
+        labels: this.dataTableItems
+          .map((d) =>
+            d.date.replace(/20(\d{2})年(\d{2})月(\d{2})日/, '’$1/$2/$3')
+          )
+          .reverse(),
+        datasets: [
+          {
+            label: '價格',
+            borderColor: '#FFD600',
+            borderWidth: 1,
+            backgroundColor: '#FFEB3B',
+            pointHoverRadius: 3,
+            pointRadius: 2,
+            fill: false,
+            data: this.dataTableItems.map((d) => Number(d.value)).reverse(),
+          },
+        ],
+      };
     },
   },
   created() {
-    this.dateRange = [this.dateRangeMin, this.dateRangeMax];
+    this.dateRange = [this.dateOfIndex(29), this.dateOfIndex(0)];
   },
   watch: {
     dateRange() {
       this.isDataTableLoading = true;
+      this.isLineChartLoaded = false;
       this.setDataTableItems();
       this.isDataTableLoading = false;
+      this.isLineChartLoaded = true;
     },
   },
 };

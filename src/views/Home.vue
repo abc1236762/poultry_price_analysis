@@ -10,7 +10,7 @@
           <v-list-item-subtitle v-text="item.subtitle" />
         </v-list-item-content>
         <v-list-item-icon>
-          <v-icon large :color="item.color" v-text="item.status" />
+          <v-icon large :color="item.trendColor" v-text="item.trendIcon" />
           <v-list-item-title class="value">
             <pre v-text="item.value" />
           </v-list-item-title>
@@ -68,14 +68,14 @@ export default {
         item.subtitle = `${dataUnit}，更新：${last.date}`;
         item.value = getValueString(last.value);
         item.link = dataItem.link;
-        item.color = 'grey';
-        item.status = 'mdi-trending-neutral';
+        item.trendColor = 'grey';
+        item.trendIcon = 'mdi-trending-neutral';
         if (diff > 0) {
-          item.color = 'red';
-          item.status = 'mdi-trending-up';
+          item.trendColor = 'red';
+          item.trendIcon = 'mdi-trending-up';
         } else if (diff < 0) {
-          item.color = 'green';
-          item.status = 'mdi-trending-down';
+          item.trendColor = 'green';
+          item.trendIcon = 'mdi-trending-down';
         }
         this.items.push(item);
       }
