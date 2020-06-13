@@ -1,23 +1,19 @@
-.DS_Store
-node_modules
 /dist
-
-# local env files
-.env.local
-.env.*.local
-
-# Log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Electron-builder output
 /dist_electron
 
-# Visual Studio Code
+# Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode
+# Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode
+
+### VisualStudioCode ###
 .vscode/*
-!.vscode/extensions.json
-!.vscode/launch.json
 !.vscode/settings.json
 !.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
+# End of https://www.toptal.com/developers/gitignore/api/visualstudiocode

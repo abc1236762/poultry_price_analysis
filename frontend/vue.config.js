@@ -1,8 +1,6 @@
 module.exports = {
+  outputDir: '../dist',
   transpileDependencies: ['vuetify'],
-  devServer: {
-    // TODO
-  },
   configureWebpack: {
     devtool: 'source-map',
   },
@@ -14,6 +12,7 @@ module.exports = {
   },
   pluginOptions: {
     electronBuilder: {
+      outputDir: '../dist_electron',
       nodeIntegration: true,
       builderOptions: {
         appId: 'xyz.yurina.poultrypriceanalysis',

@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import { getDateString } from '@/utils';
 
+/*
 const dataSources = new Map([
   [
     'PoultryTransBoiledChickenData',
@@ -57,7 +58,7 @@ function processRawData(rawData, fields) {
     for (const [field, name] of fields) {
       if (!result.has(name)) result.set(name, new Array());
       let rawValue = node[field];
-      if (rawValue != '休市' && rawValue != '-') {
+      if (rawValue != '休市' && rawValue != '-' && rawValue != '') {
         if (rawValue.includes('..')) rawValue = rawValue.replace('..', '.');
         if (rawValue.includes('-')) {
           const rawValues = rawValue.split('-');
@@ -70,6 +71,7 @@ function processRawData(rawData, fields) {
   }
   return result;
 }
+*/
 
 let data = new Map();
 
@@ -83,6 +85,12 @@ export function getData() {
       resolve();
     });
   }
+  return axios.get('/api/data').then((response) => {
+    for (const [k, v] of Object.entries(response.data)) data.set(k, v);
+    localStorage.setItem('date', date);
+    localStorage.setItem('data', JSON.stringify(Array.from(data)));
+  });
+  /*
   return Promise.all(
     Array.from(dataSources).map(async ([src, fields]) => {
       axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -90,11 +98,16 @@ export function getData() {
       return processRawData(response.data, fields);
     })
   ).then((results) => {
-    console.log(results);
-    results.forEach((result) => result.forEach((v, k) => data.set(k, v)));
+    results.forEach((result) =>
+      result.forEach((v, k) => {
+        if (!data.has(k)) data.set(k, v);
+        else data.set(k, [...data.get(k), ...v]);
+      })
+    );
     localStorage.setItem('date', date);
     localStorage.setItem('data', JSON.stringify(Array.from(data)));
   });
+  */
 }
 
 export const dataUnit = '元／台斤';
