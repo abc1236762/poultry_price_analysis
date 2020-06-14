@@ -108,6 +108,13 @@ export function getData() {
   */
 }
 
+export function getPrediction(key, past, future) {
+  return axios
+    .get('/api/pred', { params: { key, past, future } })
+    .then((response) => response.data)
+    .catch(() => null);
+}
+
 export const dataUnit = '元／台斤';
 
 export const dataItems = [

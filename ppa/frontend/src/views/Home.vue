@@ -42,7 +42,7 @@
 </style>
 
 <script>
-import data, { getData, dataItems, dataUnit } from '@/plugins/data';
+import data, { getData, dataItems, dataUnit } from '@/services/data';
 import { getValueString } from '@/utils';
 
 export default {

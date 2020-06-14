@@ -56,15 +56,14 @@ import json
 import socketserver
 from datetime import datetime, timedelta
 from http import HTTPStatus, server
+from multiprocessing.pool import ThreadPool
 from os import path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import urlopen
 
 import numpy as np
-from sklearn.linear_model import Ridge
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.svm import SVR
 
 __all__ = ['PORT', 'run_server']
 
@@ -138,12 +137,26 @@ class Handler(server.SimpleHTTPRequestHandler):
         return date_range
 
     @staticmethod
-    def _get_data() -> (Dict[str, List[Dict[str, Union[str, float]]]],
-                        Dict[str, np.ndarray]):
-        data, datasets = dict(), dict()
-        for src, fields in Handler._data_sources.items():
+    def _get_data(key: Optional[str] = None) -> (
+            Dict[str, List[Dict[str, Union[str, float]]]],
+            Dict[str, np.ndarray]):
+
+        def request_data(src: str):
             with urlopen(Handler._data_url.format(src)) as f:
                 raw_data = json.load(f)
+            return src, raw_data
+
+        data, datasets = dict(), dict()
+        if key is None:
+            srcs = Handler._data_sources.keys()
+        else:
+            srcs = list()
+            for src, fields in Handler._data_sources.items():
+                if key in fields.values():
+                    srcs.append(src)
+        results = ThreadPool(len(srcs)).imap(request_data, srcs)
+        for src, raw_data in results:
+            fields = Handler._data_sources[src]
             for k, v in Handler._process_raw_data(raw_data, fields).items():
                 if k in data:
                     v.extend(data[k])
@@ -165,13 +178,13 @@ class Handler(server.SimpleHTTPRequestHandler):
 
     @staticmethod
     def _train_and_predict(
-            dataset: np.ndarray, past: int, future: int) -> np.ndarray:
+            dataset: np.ndarray, past: int, future: int) -> List[float]:
         l = len(dataset)
         x = np.arange(l - past, l).reshape(-1, 1)
-        x_pred = np.arange(l, l + future).reshape(-1, 1)
-        y = dataset[-past:].reshape(-1, 1)
-        lr = make_pipeline(PolynomialFeatures(6), Ridge()).fit(x, y)
-        return lr.predict(x_pred).flatten()
+        x_pred = np.arange(l - past, l + future).reshape(-1, 1)
+        y = dataset[-past:]
+        svr = SVR(kernel='rbf', C=20).fit(x, y)
+        return y.tolist() + svr.predict(x_pred).flatten().tolist()
 
     def __init__(self, *args, directory=None, **kwargs):
         self._data: Dict[str, List[Dict[str, Union[str, float]]]] = None
@@ -181,7 +194,7 @@ class Handler(server.SimpleHTTPRequestHandler):
 
     def _set_send_json_response(self):
         self.send_response(HTTPStatus.OK)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Type', 'application/json; charset=UTF-8')
         self.end_headers()
 
     def do_GET(self):
@@ -196,7 +209,7 @@ class Handler(server.SimpleHTTPRequestHandler):
                 key = query['key'][0]
                 past = int(query['past'][0])
                 future = int(query['future'][0])
-                _, datasets = Handler._get_data()
+                _, datasets = Handler._get_data(key)
                 dataset = datasets[key]
                 assert 0 < past <= len(dataset) and future > 0
             except:
@@ -205,7 +218,7 @@ class Handler(server.SimpleHTTPRequestHandler):
             pred = Handler._train_and_predict(dataset, past, future)
             self._set_send_json_response()
             self.wfile.write(json.dumps(
-                pred.tolist(), ensure_ascii=False).encode('utf-8'))
+                pred, ensure_ascii=False).encode('utf-8'))
         else:
             super().do_GET()
 

@@ -44,7 +44,7 @@
 </style>
 
 <script>
-import { dataItems } from './plugins/data';
+import { dataItems } from './services/data';
 
 export default {
   name: 'App',

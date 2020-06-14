@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <v-card class="ma-4 mx-sm-auto" raised max-width="600">
+    <v-card class="ma-4 mx-sm-auto" raised max-width="600px">
       <v-list-item>
         <v-list-item-content>
           <v-icon class="icon" large v-text="item.icon"></v-icon>
@@ -27,9 +27,9 @@
         </v-row>
       </v-list-item>
     </v-card>
-    <v-card class="ma-4 mx-sm-auto" raised max-width="600">
+    <v-card class="ma-4 mx-sm-auto" raised max-width="600px">
       <v-card-title>歷史資料</v-card-title>
-      <v-list-item>
+      <div class="pa-4">
         <v-dialog
           ref="datePickerDialog"
           v-model="isDatePickerEnabled"
@@ -72,7 +72,7 @@
             </v-btn>
           </v-date-picker>
         </v-dialog>
-      </v-list-item>
+      </div>
       <line-chart
         class="pa-4"
         v-if="isLineChartLoaded"
@@ -87,19 +87,78 @@
         mobile-breakpoint=""
       />
     </v-card>
+    <v-card class="ma-4 mx-sm-auto" raised max-width="600px">
+      <v-card-title>未來預測</v-card-title>
+      <div class="pa-4">
+        <v-form ref="predForm" v-model="isPredFormValid">
+          <v-row>
+            <v-col>
+              <v-text-field
+                v-model="pastText"
+                :rules="intRules"
+                label="從最近"
+                suffix="天"
+                type="number"
+                required
+              ></v-text-field>
+            </v-col>
+            <v-col>
+              <v-text-field
+                v-model="futureText"
+                :rules="intRules"
+                label="預測後"
+                suffix="天"
+                type="number"
+                required
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-btn block color="success" @click="predict">
+            預測
+          </v-btn>
+        </v-form>
+      </div>
+      <div id="pred">
+        <line-chart
+          class="pa-4"
+          v-if="isPredLineChartLoaded"
+          :chart-data="predLineChartData"
+          :options="{ legend: { display: false } }"
+        />
+      </div>
+      <v-overlay :value="isPredicting" absolute>
+        <v-progress-circular indeterminate size="64" />
+      </v-overlay>
+    </v-card>
+    <v-snackbar v-model="predFailedSnackbar" timeout="2000">
+      天數超出資料數量，無法預測
+      <template v-slot:action="{ attrs }">
+        <v-btn
+          color="blue"
+          text
+          v-bind="attrs"
+          @click="predFailedSnackbar = false"
+        >
+          關閉
+        </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .icon {
   color: black;
   font-style: normal;
+}
+input[type='number'] {
+  text-align: right;
 }
 </style>
 
 <script>
 import { getValueString } from '@/utils';
-import data, { dataItems, dataUnit } from '@/plugins/data';
+import data, { dataItems, dataUnit, getPrediction } from '@/services/data';
 
 import Vue from 'vue';
 import { Line, mixins } from 'vue-chartjs';
@@ -137,6 +196,14 @@ export default {
     dataTableItems: [],
     isLineChartLoaded: false,
     lineChartData: {},
+    intRules: [(v) => /^[1-9]\d*$/.test(v) || '必須是大於0的整數'],
+    isPredFormValid: true,
+    isPredicting: false,
+    pastText: 60,
+    futureText: 10,
+    isPredLineChartLoaded: false,
+    predLineChartData: {},
+    predFailedSnackbar: false,
   }),
   computed: {
     item() {
@@ -216,7 +283,7 @@ export default {
           {
             label: '價格',
             borderColor: '#FFD600',
-            borderWidth: 1,
+            borderWidth: 2.5,
             backgroundColor: '#FFEB3B',
             pointHoverRadius: 3,
             pointRadius: 2,
@@ -226,9 +293,67 @@ export default {
         ],
       };
     },
+    async predict() {
+      const past = Number(this.pastText);
+      const future = Number(this.futureText);
+      if (!Number.isInteger(past) || !Number.isInteger(future)) return;
+      this.isPredLineChartLoaded = false;
+      this.isPredicting = true;
+      const result = await getPrediction(this.item.title, past, future);
+      if (!result) {
+        this.isPredicting = false;
+        this.predFailedSnackbar = true;
+        return;
+      }
+      const xs = Array.from(Array(past + future).keys()).map(
+        (i) => i - past + 1
+      );
+      this.predLineChartData = {
+        labels: xs.map((x) => {
+          if (x > 0) return `後${x}天`;
+          else if (x < 0) return `前${Math.abs(x)}天`;
+          else return '今天';
+        }),
+        datasets: [
+          {
+            label: '真實',
+            borderColor: '#FFD600',
+            backgroundColor: '#FFEB3B',
+            pointHoverRadius: 2,
+            pointRadius: 1,
+            fill: false,
+            showLine: false,
+            data: xs.slice(0, past).map((x) => result[x + past - 1]),
+          },
+          {
+            label: '過去預測',
+            borderColor: '#00BFA5',
+            borderWidth: 1.5,
+            borderDash: [4, 1],
+            backgroundColor: '#009688',
+            pointHoverRadius: 2,
+            pointRadius: 1,
+            fill: false,
+            data: xs.slice(0, past).map((x) => result[x + past * 2 - 1]),
+          },
+          {
+            label: '未來預測',
+            borderColor: '#DD2C00',
+            borderWidth: 2.5,
+            backgroundColor: '#FF5722',
+            pointHoverRadius: 3,
+            pointRadius: 2,
+            fill: false,
+            data: xs.map((x) => (x > 0 ? result[x + past * 2 - 1] : null)),
+          },
+        ],
+      };
+      this.isPredLineChartLoaded = true;
+      this.isPredicting = false;
+    },
   },
   created() {
-    this.dateRange = [this.dateOfIndex(29), this.dateOfIndex(0)];
+    this.dateRange = [this.dateOfIndex(59), this.dateOfIndex(0)];
   },
   watch: {
     dateRange() {
