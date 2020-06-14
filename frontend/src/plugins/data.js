@@ -1,8 +1,8 @@
 import axios from 'axios';
 
+/*
 import { getDateString } from '@/utils';
 
-/*
 const dataSources = new Map([
   [
     'PoultryTransBoiledChickenData',
@@ -76,6 +76,10 @@ function processRawData(rawData, fields) {
 let data = new Map();
 
 export function getData() {
+  return axios.get('/api/data').then((response) => {
+    for (const [k, v] of Object.entries(response.data)) data.set(k, v);
+  });
+  /*
   const date = getDateString();
   if (date === localStorage.getItem('date')) {
     return new Promise((resolve) => {
@@ -85,12 +89,6 @@ export function getData() {
       resolve();
     });
   }
-  return axios.get('/api/data').then((response) => {
-    for (const [k, v] of Object.entries(response.data)) data.set(k, v);
-    localStorage.setItem('date', date);
-    localStorage.setItem('data', JSON.stringify(Array.from(data)));
-  });
-  /*
   return Promise.all(
     Array.from(dataSources).map(async ([src, fields]) => {
       axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
