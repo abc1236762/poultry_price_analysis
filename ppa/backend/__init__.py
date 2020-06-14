@@ -176,7 +176,7 @@ class Handler(server.SimpleHTTPRequestHandler):
     def __init__(self, *args, directory=None, **kwargs):
         self._data: Dict[str, List[Dict[str, Union[str, float]]]] = None
         self._datasets: Dict[np.ndarray] = None
-        directory = path.join(path.dirname(__file__), '../dist')
+        directory = path.join(path.dirname(__file__), '../../dist')
         super().__init__(*args, directory=directory, **kwargs)
 
     def _set_send_json_response(self):
