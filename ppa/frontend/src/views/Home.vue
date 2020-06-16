@@ -52,11 +52,13 @@ export default {
     items: [],
   }),
   methods: {
+    // 使用非同步的方式取得資料，等待資料時會顯示轉圈圈的動畫
     async getData() {
       this.isLoading = true;
       await getData();
       this.isLoading = false;
     },
+    // 設置列表內容
     setItems() {
       for (const dataItem of dataItems) {
         const item = {};
@@ -68,6 +70,7 @@ export default {
         item.subtitle = `${dataUnit}，更新：${last.date}`;
         item.value = getValueString(last.value);
         item.link = dataItem.link;
+        // 處理漲幅圖示和顏色
         item.trendColor = 'grey';
         item.trendIcon = 'mdi-trending-neutral';
         if (diff > 0) {
@@ -82,7 +85,7 @@ export default {
     },
   },
   created: async function() {
-    if (Object.keys(data).length === 0) await this.getData();
+    await this.getData();
     this.setItems();
   },
 };

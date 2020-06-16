@@ -156,6 +156,7 @@
   color: black;
   font-style: normal;
 }
+// 輸入數字的框內數字要靠右
 input[type='number'] {
   text-align: right;
 }
@@ -171,6 +172,7 @@ import { Line, mixins } from 'vue-chartjs';
 
 Chart.defaults.global.defaultFontFamily =
   '"Noto Sans", "Noto Sans TC", "Noto Color Emoji", sans-serif';
+// 建立折線圖元件
 const LineChart = Vue.component('line-chart', {
   extends: Line,
   mixins: [mixins.reactiveProp],
@@ -268,6 +270,7 @@ export default {
         .sort()
         .join('～');
     },
+    // 設置資料表格內的內容以及折線圖
     setDataTableItems() {
       let begin = this.dates.indexOf(this.dateRange[0].split('-').join('/'));
       let end = this.dates.indexOf(
@@ -275,12 +278,14 @@ export default {
       );
       if (begin > end) [begin, end] = [end, begin];
       const dates = this.dates.slice(begin, end + 1);
+      // 設置資料表格的內容
       this.dataTableItems = this.data
         .filter((d) => dates.includes(d.date.split('-').join('/')))
         .map((d) => ({
           date: d.date.replace(/(\d{4})\/(\d{2})\/(\d{2})/, '$1年$2月$3日'),
           value: getValueString(d.value),
         }));
+      // 設置折線圖的內容
       this.lineChartData = {
         labels: this.dataTableItems
           .map((d) =>
@@ -301,6 +306,7 @@ export default {
         ],
       };
     },
+    // 進行預測並且顯示預測折線圖
     async predict() {
       const past = Number(this.pastText);
       const future = Number(this.futureText);
@@ -309,6 +315,7 @@ export default {
       this.isPredicting = true;
       const result = await getPrediction(this.item.title, past, future);
       if (!result) {
+        // 沒有結果的話一定是天數超出範圍
         this.isPredicting = false;
         this.predFailedSnackbar = true;
         return;
@@ -316,6 +323,7 @@ export default {
       const xs = Array.from(Array(past + future).keys()).map(
         (i) => i - past + 1
       );
+      // 設置預測折線圖的內容
       this.predLineChartData = {
         labels: xs.map((x) => {
           if (x > 0) return `後${x}天`;
@@ -364,6 +372,7 @@ export default {
     this.dateRange = [this.dateOfIndex(59), this.dateOfIndex(0)];
   },
   watch: {
+    // 當資料範圍變更時重新設置表格等
     dateRange() {
       this.isDataTableLoading = true;
       this.isLineChartLoaded = false;

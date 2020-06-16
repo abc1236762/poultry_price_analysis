@@ -1,9 +1,5 @@
 '''
-$ conda create -n ppa --strict-channel-priority -y \
-        python=3 numpy scikit-learn pylint autopep8 rope
-$ conda activate ppa
-$ conda config --env --set channel_priority strict
-$ conda list
+$ conda activate ppa && conda list
 # packages in environment at /home/user/miniconda3/envs/ppa:
 #
 # Name                    Version                   Build  Channel
@@ -49,7 +45,6 @@ wheel                     0.34.2                   py38_0
 wrapt                     1.11.2           py38h7b6447c_0
 xz                        5.2.5                h7b6447c_0
 zlib                      1.2.11               h7b6447c_3
-$ conda deactivate
 '''
 
 import json
@@ -67,12 +62,16 @@ from sklearn.svm import SVR
 
 __all__ = ['PORT', 'run_server']
 
-PORT = 9487
+PORT = 9487 # 會在哪一埠執行網站
 
 
 class Handler(server.SimpleHTTPRequestHandler):
+    '''處理HTTP請求的類別'''
+
+    # 資料API的網址
     _data_url = 'https://data.coa.gov.tw/Service/OpenData/FromM/{}.aspx'
 
+    # 資料來源的相關資料，網址的名稱部分對應需要的各項欄位以及對應顯示名稱
     _data_sources = {
         'PoultryTransBoiledChickenData': {
             '白肉雞(2.0Kg以上)': '白肉雞（2.0kg以上）',
@@ -106,6 +105,7 @@ class Handler(server.SimpleHTTPRequestHandler):
         raw_data: List[Dict[str, str]],
         fields: Dict[str, str],
     ) -> Dict[str, List[Dict[str, Union[str, float]]]]:
+        '''處理原始資料'''
         result = dict()
         for node in raw_data:
             date = node['日期']
@@ -113,7 +113,9 @@ class Handler(server.SimpleHTTPRequestHandler):
                 if name not in result:
                     result[name] = list()
                 rawValue: str = node[field]
+                # 排除例外狀況，例如值為空或「休市」等
                 if rawValue != '休市' and rawValue != '-' and rawValue != '':
+                    # 處理特殊狀況，例如小數點多一個點或以範圍的方式表示
                     if '..' in rawValue:
                         rawValue = rawValue.replace('..', '.')
                     if '-' in rawValue:
@@ -127,6 +129,7 @@ class Handler(server.SimpleHTTPRequestHandler):
 
     @staticmethod
     def _gen_date_range(start_str: str, end_str: str) -> List[str]:
+        '''產生範圍內所有日期的列表'''
         date_range = list()
         time = datetime.strptime(start_str, '%Y/%m/%d')
         end = datetime.strptime(end_str, '%Y/%m/%d')
@@ -140,13 +143,16 @@ class Handler(server.SimpleHTTPRequestHandler):
     def _get_data(key: Optional[str] = None) -> (
             Dict[str, List[Dict[str, Union[str, float]]]],
             Dict[str, np.ndarray]):
+        '''取得資料'''
 
         def request_data(src: str):
+            '''請求資料'''
             with urlopen(Handler._data_url.format(src)) as f:
                 raw_data = json.load(f)
             return src, raw_data
 
         data, datasets = dict(), dict()
+        # 去檢查是否只要抓一部分的資料
         if key is None:
             srcs = Handler._data_sources.keys()
         else:
@@ -154,6 +160,7 @@ class Handler(server.SimpleHTTPRequestHandler):
             for src, fields in Handler._data_sources.items():
                 if key in fields.values():
                     srcs.append(src)
+        # 使用執行緒池同時做請求，加快抓取資料的速度
         results = ThreadPool(len(srcs)).imap(request_data, srcs)
         for src, raw_data in results:
             fields = Handler._data_sources[src]
@@ -161,6 +168,7 @@ class Handler(server.SimpleHTTPRequestHandler):
                 if k in data:
                     v.extend(data[k])
                 data[k] = v
+        # 從處理好的資料製作方便機器學習使用的資料集
         for k, v in data.items():
             date_range = Handler._gen_date_range(
                 v[-1]['date'], datetime.now().strftime('%Y/%m/%d'))
@@ -179,6 +187,7 @@ class Handler(server.SimpleHTTPRequestHandler):
     @staticmethod
     def _train_and_predict(
             dataset: np.ndarray, past: int, future: int) -> List[float]:
+        '''訓練模型並且預測'''
         l = len(dataset)
         x = np.arange(l - past, l).reshape(-1, 1)
         x_pred = np.arange(l - past, l + future).reshape(-1, 1)
@@ -186,26 +195,33 @@ class Handler(server.SimpleHTTPRequestHandler):
         svr = SVR(kernel='rbf', C=20).fit(x, y)
         return y.tolist() + svr.predict(x_pred).flatten().tolist()
 
-    def __init__(self, *args, directory=None, **kwargs):
-        self._data: Dict[str, List[Dict[str, Union[str, float]]]] = None
-        self._datasets: Dict[np.ndarray] = None
-        directory = path.join(path.dirname(__file__), '../../dist')
-        super().__init__(*args, directory=directory, **kwargs)
-
     def _set_send_json_response(self):
+        '''設置回傳JSON時需要的回應'''
         self.send_response(HTTPStatus.OK)
         self.send_header('Content-Type', 'application/json; charset=UTF-8')
         self.end_headers()
 
+    def __init__(self, *args, directory=None, **kwargs):
+        '''初始化'''
+        self._data: Dict[str, List[Dict[str, Union[str, float]]]] = None
+        self._datasets: Dict[np.ndarray] = None
+        # 設置伺服器起始資料夾的路徑
+        directory = path.join(path.dirname(__file__), '../../dist')
+        super().__init__(*args, directory=directory, **kwargs)
+
     def do_GET(self):
+        '''做GET請求'''
         if self.path == '/api/data':
+            # 取得資料時的API之處理
             data, _ = Handler._get_data()
             self._set_send_json_response()
             self.wfile.write(
                 json.dumps(data, ensure_ascii=False).encode('utf-8'))
         elif self.path.startswith('/api/pred'):
+            # 做預測時的API之處理
             try:
                 query = parse_qs(urlparse(self.path).query)
+                # 檢查參數是否合法
                 key = query['key'][0]
                 past = int(query['past'][0])
                 future = int(query['future'][0])
@@ -224,5 +240,6 @@ class Handler(server.SimpleHTTPRequestHandler):
 
 
 def run_server():
+    '''執行伺服器'''
     with socketserver.TCPServer(('', PORT), Handler) as httpd:
         httpd.serve_forever()

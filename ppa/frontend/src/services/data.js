@@ -73,8 +73,9 @@ function processRawData(rawData, fields) {
 }
 */
 
-let data = new Map();
+let data = new Map(); // 資料
 
+// 取得資料
 export function getData() {
   return axios.get('/api/data').then((response) => {
     for (const [k, v] of Object.entries(response.data)) data.set(k, v);
@@ -108,6 +109,7 @@ export function getData() {
   */
 }
 
+// 取得預測結果
 export function getPrediction(key, past, future) {
   return axios
     .get('/api/pred', { params: { key, past, future } })
@@ -115,9 +117,9 @@ export function getPrediction(key, past, future) {
     .catch(() => null);
 }
 
-export const dataUnit = '元／台斤';
+export const dataUnit = '元／台斤'; // 資料單位
 
-export const dataItems = [
+export const dataItems = [ // 資料顯示在網頁畫面上的元素
   {
     key: '01',
     icon: '🐔',

@@ -14,9 +14,7 @@
     </v-navigation-drawer>
     <v-app-bar clipped-left app color="blue darken-3" dense dark>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <v-toolbar-title>
-        🐣家禽價格分析
-      </v-toolbar-title>
+      <v-toolbar-title>🐣家禽價格分析</v-toolbar-title>
     </v-app-bar>
     <v-main>
       <v-container
@@ -33,6 +31,7 @@
 </template>
 
 <style lang="scss">
+// 換頁動畫
 .fade-enter-active,
 .fade-leave-active {
   transition: 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
