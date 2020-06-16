@@ -10,14 +10,4 @@ module.exports = {
       return args;
     });
   },
-  pluginOptions: {
-    electronBuilder: {
-      outputDir: '../../dist_electron',
-      nodeIntegration: true,
-      builderOptions: {
-        appId: 'xyz.yurina.poultrypriceanalysis',
-        productName: '家禽價格分析',
-      },
-    },
-  },
 };

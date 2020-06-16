@@ -113,7 +113,12 @@
               ></v-text-field>
             </v-col>
           </v-row>
-          <v-btn block color="success" @click="predict">
+          <v-btn
+            block
+            color="success"
+            @click="predict"
+            :disabled="!isPredFormValid"
+          >
             預測
           </v-btn>
         </v-form>
@@ -130,11 +135,11 @@
         <v-progress-circular indeterminate size="64" />
       </v-overlay>
     </v-card>
-    <v-snackbar v-model="predFailedSnackbar" timeout="2000">
-      天數超出資料數量，無法預測
+    <v-snackbar v-model="predFailedSnackbar">
+      <div class="text-center">天數超出資料數量，無法預測</div>
       <template v-slot:action="{ attrs }">
         <v-btn
-          color="blue"
+          color="info"
           text
           v-bind="attrs"
           @click="predFailedSnackbar = false"
@@ -161,8 +166,11 @@ import { getValueString } from '@/utils';
 import data, { dataItems, dataUnit, getPrediction } from '@/services/data';
 
 import Vue from 'vue';
+import Chart from 'chart.js';
 import { Line, mixins } from 'vue-chartjs';
 
+Chart.defaults.global.defaultFontFamily =
+  '"Noto Sans", "Noto Sans TC", "Noto Color Emoji", sans-serif';
 const LineChart = Vue.component('line-chart', {
   extends: Line,
   mixins: [mixins.reactiveProp],
