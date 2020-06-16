@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-navigation-drawer v-model="drawer" clipped mobile-break-point="640" app>
+    <v-navigation-drawer v-model="drawer" clipped mobile-breakpoint="640" app>
       <v-list dense shaped>
         <template v-for="item in items">
           <v-list-item :key="item.key" :to="item.key" link>
@@ -18,7 +18,7 @@
         🐣家禽價格分析
       </v-toolbar-title>
     </v-app-bar>
-    <v-content>
+    <v-main>
       <v-container
         fluid
         class="pa-0 overflow-y-auto"
@@ -28,7 +28,7 @@
           <router-view :key="$route.params.key" />
         </transition>
       </v-container>
-    </v-content>
+    </v-main>
   </v-app>
 </template>
 
