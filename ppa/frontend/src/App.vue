@@ -2,14 +2,12 @@
   <v-app>
     <v-navigation-drawer v-model="drawer" clipped mobile-breakpoint="640" app>
       <v-list dense shaped>
-        <template v-for="item in items">
-          <v-list-item :key="item.key" :to="item.key" link>
-            <v-list-item-icon v-text="item.icon" />
-            <v-list-item-content>
-              <v-list-item-title v-text="item.title" />
-            </v-list-item-content>
-          </v-list-item>
-        </template>
+        <v-list-item v-for="item in items" :key="item.key" :to="item.key" link>
+          <v-list-item-icon v-text="item.icon" />
+          <v-list-item-content>
+            <v-list-item-title v-text="item.title" />
+          </v-list-item-content>
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
     <v-app-bar clipped-left app color="blue darken-3" dense dark>
